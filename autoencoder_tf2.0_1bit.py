@@ -22,6 +22,7 @@ tf.executing_eagerly()
 BATCH_SIZE = 8
 MAX_EPOCH = 80000
 
+TRAIN = False
 
 
 lossFnc = tf.keras.losses.mean_squared_error
@@ -80,56 +81,56 @@ modelDecoder = tf.keras.models.load_model('decoder_1bit')
 modelEncoder = tf.keras.models.load_model('encoder_1bit')
 
 
+if TRAIN:
 
-
-factor = np.exp(np.log(50)/MAX_EPOCH)
-expo = 0.5   
-
-_loss = []
-
-for epoch in range(MAX_EPOCH):
-    print('epoch : %d of %d'%(epoch, MAX_EPOCH))
-
-    p = np.random.permutation(NTrain)
-
-    X_train = X_train[p]
-
-    X_train_dataset = tf.data.Dataset.from_tensor_slices(X_train).batch(batch_size=BATCH_SIZE)
+    factor = np.exp(np.log(50)/MAX_EPOCH)
+    expo = 0.5   
     
-    i = 0    
+    _loss = []
     
-    expo = expo*factor
-    expo = 1
+    for epoch in range(MAX_EPOCH):
+        print('epoch : %d of %d'%(epoch, MAX_EPOCH))
     
-    for X in X_train_dataset:
-
-        with tf.GradientTape(persistent=True) as tape:
-            
-            features = modelEncoder(X)
-            XHat = modelDecoder(features)
-            loss = tf.reduce_mean(lossFnc(X, XHat))
-                
-           
-
-        gradsEncoder = tape.gradient(loss, modelEncoder.trainable_variables)
-        gradsDecoder = tape.gradient(loss, modelDecoder.trainable_variables)
-
-        optimizer.apply_gradients(zip(gradsEncoder, modelEncoder.trainable_variables))
-        optimizer.apply_gradients(zip(gradsDecoder, modelDecoder.trainable_variables))
-
-
-        _loss.append(loss)
-
-        print('batch : %d of %d (loss = %.4f)'%(i,int(NTrain/BATCH_SIZE),loss))
+        p = np.random.permutation(NTrain)
     
-        i = i + 1
+        X_train = X_train[p]
+    
+        X_train_dataset = tf.data.Dataset.from_tensor_slices(X_train).batch(batch_size=BATCH_SIZE)
         
-        # if len(_loss)%100 == 0:
-        #     plt.cla()
-        #     plt.plot(_loss)
-        #     plt.plot([0, len(_loss)],[0.001, 0.001],color='k')
-        #     plt.axis([0, len(_loss), 0.0, 0.002])
-        #     plt.pause(0.000001)
+        i = 0    
+        
+        expo = expo*factor
+        expo = 1
+        
+        for X in X_train_dataset:
+    
+            with tf.GradientTape(persistent=True) as tape:
+                
+                features = modelEncoder(X)
+                XHat = modelDecoder(features)
+                loss = tf.reduce_mean(lossFnc(X, XHat))
+                    
+               
+    
+            gradsEncoder = tape.gradient(loss, modelEncoder.trainable_variables)
+            gradsDecoder = tape.gradient(loss, modelDecoder.trainable_variables)
+    
+            optimizer.apply_gradients(zip(gradsEncoder, modelEncoder.trainable_variables))
+            optimizer.apply_gradients(zip(gradsDecoder, modelDecoder.trainable_variables))
+    
+    
+            _loss.append(loss)
+    
+            print('batch : %d of %d (loss = %.4f)'%(i,int(NTrain/BATCH_SIZE),loss))
+        
+            i = i + 1
+            
+            # if len(_loss)%100 == 0:
+            #     plt.cla()
+            #     plt.plot(_loss)
+            #     plt.plot([0, len(_loss)],[0.001, 0.001],color='k')
+            #     plt.axis([0, len(_loss), 0.0, 0.002])
+            #     plt.pause(0.000001)
 
 
 plt.close('all')
